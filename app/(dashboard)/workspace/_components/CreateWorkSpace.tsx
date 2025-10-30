@@ -9,22 +9,43 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod'
-import { workspaceSchema } from "@/app/schemas/workspace";
+import { workspaceSchema, WorkspaceSchemaType } from "@/app/schemas/workspace";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { toast } from "sonner";
 
 export function CreateWorkSpace() {
     const [open, setOpen] = useState(false)
+    const queryClient = useQueryClient()
 
 
     const form = useForm({
         resolver: zodResolver(workspaceSchema),
-        defaultValues:{
-            name:""
+        defaultValues: {
+            name: ""
         }
     })
 
+    const createWorkspaceMutation = useMutation(
+        orpc.workspace.create.mutationOptions({
+            onSuccess: (newWorkspace) => {
+                toast.success(`Workspace ${newWorkspace.workspaceName} created successfully`)
+                queryClient.invalidateQueries({
+                    queryKey: orpc.workspace.list.queryKey()
+                })
+
+                form.reset()
+                setOpen(false)
+            },
+            onError: () => {
+                toast.error("failed to create workspace, try again!")
+            }
+        })
+    )
+
     // 2. Define a submit handler.
-    function onSubmit() {
-        console.log("data");
+    function onSubmit(values: WorkspaceSchemaType) {
+        createWorkspaceMutation.mutate(values)
 
     }
     return (
@@ -47,7 +68,7 @@ export function CreateWorkSpace() {
                     <DialogDescription>Create a new workSpact to get  started</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}> 
+                    <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -58,7 +79,9 @@ export function CreateWorkSpace() {
                             </FormItem>
                         )} />
 
-                        <Button type="submit">Create Workspace</Button>
+                        <Button disabled={createWorkspaceMutation.isPending} type="submit">
+                            {createWorkspaceMutation.isPending ? "Creating..." : "Create Workspace"}
+                        </Button>
                     </form>
                 </Form>
             </DialogContent>
