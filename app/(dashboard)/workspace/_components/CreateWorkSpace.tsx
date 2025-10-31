@@ -13,6 +13,7 @@ import { workspaceSchema, WorkspaceSchemaType } from "@/app/schemas/workspace";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/lib/orpc";
 import { toast } from "sonner";
+import { isDefinedError } from "@orpc/client";
 
 export function CreateWorkSpace() {
     const [open, setOpen] = useState(false)
@@ -37,7 +38,17 @@ export function CreateWorkSpace() {
                 form.reset()
                 setOpen(false)
             },
-            onError: () => {
+            onError: (error) => {
+                if (isDefinedError(error)) {
+                    if (error.code === "RATE_LIMITED") {
+                        toast.error(error.message)
+                        return;
+                    }
+
+                    toast.error(error.message)
+                    return;
+                }
+
                 toast.error("failed to create workspace, try again!")
             }
         })
@@ -65,7 +76,7 @@ export function CreateWorkSpace() {
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Create Workspace</DialogTitle>
-                    <DialogDescription>Create a new workSpact to get  started</DialogDescription>
+                    <DialogDescription>Create a new workSpace to get  started</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
