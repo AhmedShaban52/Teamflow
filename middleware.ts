@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import arcjet, { createMiddleware, detectBot } from "@arcjet/next";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@kinde-oss/kinde-auth-nextjs/server";
+import { NextMiddleware, NextRequest, NextResponse } from "next/server";
 
 const aj = arcjet({
   key: process.env.ARCJET_KEY!,
@@ -17,22 +18,37 @@ const aj = arcjet({
   ],
 });
 
-async function existingMiddleware(req: NextRequest){
-    const {getClaim} = getKindeServerSession()
-    const orgCode = await getClaim('org_code')
 
-    const url = req.nextUrl;
+async function existingMiddleware(req: NextRequest) {
+  const anyReq = req as {
+    nextUrl: NextRequest["nextUrl"];
+    KindeAuth?: { token?: any; user?: any };
+  };
 
-    if(url.pathname.startsWith('/workspace') && !url.pathname.includes(orgCode?.value || '')) {
-        url.pathname = `/workspace/${orgCode?.value}`
+  const url = req.nextUrl;
 
-        return NextResponse.redirect(url)
-    }
+  const orgCode =
+    anyReq.KindeAuth?.user?.org_code ||
+    anyReq.KindeAuth?.token?.org_code ||
+    anyReq.KindeAuth?.token?.claims?.org_code;
 
-    return NextResponse.next()
+  if (
+    url.pathname.startsWith("/workspace") &&
+    !url.pathname.includes(orgCode || "")
+  ) {
+    url.pathname = `/workspace/${orgCode}`;
+
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
-export default createMiddleware(aj, existingMiddleware);
+export default createMiddleware(aj,
+   withAuth(existingMiddleware, {
+   publicPaths: ['/', '/api/uploadthing']
+}) as NextMiddleware
+);
 
 export const config = {
   // matcher tells Next.js which routes to run the middleware on.
