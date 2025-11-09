@@ -36,7 +36,16 @@ export function MessageItem({ message }: iAppProps) {
                     </p>
                 </div>
 
-                <SafeContent content={JSON.parse(message.content)} className="text-sm wrap-break-word prose dark:prose-invert max-w-none marker:text-primary"/>
+                <SafeContent
+                    content={JSON.parse(message.content)}
+                    className="text-sm wrap-break-word prose dark:prose-invert max-w-none marker:text-primary"
+                />
+
+                {message.imageUrl && (
+                    <div className="mt-3">
+                        <Image src={message.imageUrl} alt="Message Attachment" width={512} height={512} className="rounded-md max-h-[320px] w-auto object-contain" />
+                    </div>
+                )}
             </div>
         </div>
     )

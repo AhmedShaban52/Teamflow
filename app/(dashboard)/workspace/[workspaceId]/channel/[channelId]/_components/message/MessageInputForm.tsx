@@ -8,6 +8,8 @@ import { MessageComposer } from "./MessageComposer";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/lib/orpc";
 import { toast } from "sonner";
+import { useState } from "react";
+import { useAttachmentUpload } from "@/hooks/use-attachment-upload";
 
 interface iAppProps {
     channelId: string
@@ -15,6 +17,8 @@ interface iAppProps {
 
 export function MessageInputForm({ channelId }: iAppProps) {
    const queryClient =useQueryClient()
+   const [editorKey, setEditorKey] = useState(0)
+   const uploap = useAttachmentUpload()
 
     const form = useForm({
         resolver: zodResolver(createMessageSchema),
@@ -30,6 +34,11 @@ export function MessageInputForm({ channelId }: iAppProps) {
                 queryClient.invalidateQueries({
                     queryKey: orpc.message.list.key()
                 })
+
+                form.reset({ channelId, content:''})
+                uploap.clear()
+                setEditorKey((k) => k + 1)
+
                 return toast.success('message created successfully')
             },
             onError: () => {
@@ -40,7 +49,10 @@ export function MessageInputForm({ channelId }: iAppProps) {
 
 
     function onSubmit(data: MessageSchemaType) {
-        createMessageMutation.mutate(data)
+        createMessageMutation.mutate({
+            ...data,
+            imageUrl: uploap.stagedUrl ?? undefined
+        })
     }
     return (
         <Form {...form}>
@@ -52,10 +64,12 @@ export function MessageInputForm({ channelId }: iAppProps) {
                         <FormItem>
                             <FormControl>
                                 <MessageComposer
+                                    key={editorKey}
                                     value={field.value}
                                     onChange={field.onChange}
                                     onSubmit={() => onSubmit(form.getValues())}
                                     isSubmitting={createMessageMutation.isPending}
+                                    upload={uploap}
                                 />
                             </FormControl>
                             <FormMessage />
