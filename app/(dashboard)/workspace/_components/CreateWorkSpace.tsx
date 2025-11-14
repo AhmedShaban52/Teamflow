@@ -57,7 +57,6 @@ export function CreateWorkSpace() {
     // 2. Define a submit handler.
     function onSubmit(values: WorkspaceSchemaType) {
         createWorkspaceMutation.mutate(values)
-
     }
     return (
         <Dialog open={open} onOpenChange={setOpen}>
