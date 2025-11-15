@@ -5,7 +5,7 @@ import { requiredAuthMiddleware } from "../middlewares/auth";
 import { base } from "../middlewares/base";
 import { requiredWorkspaceMiddleware } from "../middlewares/workspace";
 import prisma from "@/lib/db";
-import { createMessageSchema } from "../schemas/message";
+import { createMessageSchema, updateMessageSchema } from "../schemas/message";
 import { getAvatar } from "@/lib/get-avatar";
 import { Message } from "@/lib/generated/prisma/client";
 import { readSecurityMiddleware } from "../middlewares/arcjet/read";
@@ -90,26 +90,81 @@ export const listMessages = base
       throw errors.FORBIDDEN();
     }
 
-    const limit = input.limit ?? 30
+    const limit = input.limit ?? 30;
 
     const messages = await prisma.message.findMany({
-      where:{
-        channelId: input.channelId
+      where: {
+        channelId: input.channelId,
       },
-      ...(input.cursor ? {
-        cursor:{id: input.cursor},
-        skip: 1
-      } : {}),
+      ...(input.cursor
+        ? {
+            cursor: { id: input.cursor },
+            skip: 1,
+          }
+        : {}),
 
       take: limit,
-      orderBy:[{createdAt: 'desc'}, {id: 'desc'}]
-    })
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
 
     const nextCursor =
-     messages.length === limit  ? messages[messages.length -1].id : undefined
+      messages.length === limit ? messages[messages.length - 1].id : undefined;
 
-     return {
+    return {
       items: messages,
-      nextCursor
-     }
-   });
+      nextCursor,
+    };
+  });
+
+export const updateMessage = base
+  .use(requiredAuthMiddleware)
+  .use(requiredWorkspaceMiddleware)
+  .use(standardSecurityMiddleware)
+  .use(writeSecurityMiddleware)
+  .route({
+    method: "PUT",
+    path: "/messages/:messageId",
+    summary: "Update a message",
+    tags: ["Messages"],
+  })
+  .input(updateMessageSchema)
+  .output(z.object({
+    message: z.custom<Message>(),
+    canEdit: z.boolean(),
+  }))
+  .handler(async ({ input, context, errors }) => {
+    const message = await prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        Channel: {
+          workspaceId: context.workspace.orgCode,
+        },
+      },
+      select: {
+        id: true,
+        authorId: true,
+      },
+    });
+
+    if (!message) {
+      throw errors.NOT_FOUND();
+    }
+
+    if (message.authorId !== context.user.id) {
+      throw errors.FORBIDDEN();
+    }
+
+    const updated = await prisma.message.update({
+      where: {
+        id: input.messageId,
+      },
+      data: {
+        content: input.content,
+      },
+    });
+
+    return {
+      message: updated,
+      canEdit: updated.authorId === context.user.id,
+    };
+  });
