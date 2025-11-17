@@ -1,6 +1,6 @@
 'use client'
 
-import { createMessageSchema, MessageSchemaType } from "@/app/schemas/message";
+import { createMessageSchema, CreateMessageSchemaType } from "@/app/schemas/message";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -136,7 +136,7 @@ export function MessageInputForm({ channelId, user }: iAppProps) {
     )
 
 
-    function onSubmit(data: MessageSchemaType) {
+    function onSubmit(data: CreateMessageSchemaType) {
         createMessageMutation.mutate({
             ...data,
             imageUrl: uploap.stagedUrl ?? undefined
