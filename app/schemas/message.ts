@@ -4,6 +4,7 @@ export const createMessageSchema = z.object({
   channelId: z.string(),
   content: z.string(),
   imageUrl: z.url().optional(),
+  threadId: z.string().optional()
 });
 
 export const updateMessageSchema = z.object({
@@ -11,5 +12,5 @@ export const updateMessageSchema = z.object({
   content: z.string(),
 });
 
-export type MessageSchemaType = z.infer<typeof createMessageSchema>;
+export type CreateMessageSchemaType = z.infer<typeof createMessageSchema>;
 export type updateMessageSchemaType = z.infer<typeof updateMessageSchema>;
