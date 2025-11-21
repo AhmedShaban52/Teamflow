@@ -26,3 +26,4 @@ const getSession = async () => {
     user,
   };
 };
+

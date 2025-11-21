@@ -175,7 +175,7 @@ export function ThreadSidebar({ user }: ThreadSidebarProps) {
                                 <p className="text-xs text-muted-foreground mb-3 px-2 ">{data.messages.length} replies</p>
                                 <div className="space-y-1">
                                     {data.messages.map((reply) => (
-                                        <ThreadReply key={reply.id} message={reply} />
+                                        <ThreadReply selectedThredId={selectedThredId!} key={reply.id} message={reply} />
                                     ))}
                                 </div>
                             </div>
